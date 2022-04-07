@@ -1,0 +1,123 @@
+---
+title: "Homework 1"
+author: "Renee LaManna, Logan Babcock, Yvonne Dinh"
+date: "4/1/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE, warning = FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE,warning = FALSE, message=FALSE)
+
+library(tidyverse)
+library(here)
+library(lubridate)
+library(tsibble)
+library(slider)
+library(feasts)
+library(ggplot2)
+
+library(chron)
+```
+
+```{r}
+seattle <- read_csv(here("data", "seattle_climate.csv")) %>% 
+  janitor::clean_names()
+```
+
+
+```{r}
+seattle_ts <- seattle %>% 
+  mutate(date = lubridate::mdy(date)) %>%  # date is currently a character, need to convert to Date using lubridate() pkg
+  as_tsibble(key = NULL, index = date) # convert to time series
+```
+
+
+``` {r}
+# Daily time series
+
+ggplot(data = seattle_ts, aes(x = date, y = tmax)) +
+  geom_line() 
+
+ggplot(data = seattle_ts, aes(x = date, y = tmin)) +
+  geom_line() 
+
+ggplot(data = seattle_ts, aes(x = date, y = prcp)) +
+  geom_line() 
+```
+
+
+
+```{r}
+# A couple monthly time series, these may not be useful tho
+
+
+tmax_month <- seattle_ts %>% 
+  index_by(yr_mo = ~yearmonth(.))%>%  # use index_by() to group by the time index yearmonth
+  summarize(monthly_tmax = mean(tmax, na.rm = TRUE)) # Need sum of all the counts in all of the months, e.g. sum of all fish counts in all months of May from 2001-2010
+
+# Seasonplot using gg_season()
+tmax_month %>% 
+  tsibble::fill_gaps() %>% 
+  gg_season(y = monthly_tmax, year.labels = TRUE, continuous = TRUE,  pal = (scales::hue_pal())(3)) +
+  theme_minimal()  +
+  labs(y = "Total Count",
+       x = "Month")
+
+```
+
+```{r}
+prcp_month <- seattle_ts %>% 
+  index_by(yr_mo = ~yearmonth(.))%>%  # use index_by() to group by the time index yearmonth
+  summarize(monthly_prcp = mean(prcp, na.rm = TRUE)) # Need sum of all the counts in all of the months, e.g. sum of all fish counts in all months of May from 2001-2010
+  
+
+# Seasonplot using gg_season()
+prcp_month %>% 
+  tsibble::fill_gaps() %>% 
+  gg_season(y = monthly_prcp, year.labels = TRUE, continuous = TRUE,  pal = (scales::hue_pal())(3)) +
+  theme_minimal()  +
+  labs(y = "Total Count",
+       x = "Month")
+
+```
+
+``` {r}
+# Some yearly time series plots
+
+tmax_annual <- seattle_ts %>% 
+  index_by(yearly = ~year(.))%>% 
+  summarize(yearly_tmax = mean(tmax, na.rm = TRUE))
+
+ggplot(data = tmax_annual, aes(x = yearly, y = yearly_tmax)) +
+  geom_line() + # color corresponds to species
+  theme_minimal() + # remove legend
+  labs(x = "Year", y = "Annual Maximum Temperature")
+
+```
+
+``` {r}
+tmin_annual <- seattle_ts %>% 
+  index_by(yearly = ~year(.))%>% 
+  summarize(yearly_tmin = mean(tmin, na.rm = TRUE))
+
+ggplot(data = tmin_annual, aes(x = yearly, y = yearly_tmin)) +
+  geom_line() + # color corresponds to species
+  theme_minimal() + # remove legend
+  labs(x = "Year", y = "Annual Minimum Temperature")
+
+```
+
+``` {r}
+prcp_annual <- seattle_ts %>% 
+  index_by(yearly = ~year(.))%>% 
+  summarize(yearly_prcp = mean(prcp, na.rm = TRUE))
+
+ggplot(data = prcp_annual, aes(x = yearly, y = yearly_prcp)) +
+  geom_line() + # color corresponds to species
+  theme_minimal() + # remove legend
+  labs(x = "Year", y = "Annual Precipitation")
+
+```
+]
+
+
